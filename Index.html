@@ -47,7 +47,7 @@
         </header>
 
         <!-- Game Board -->
-        <main id="game-board" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 md:gap-3 mb-4">
+        <main id="game-board" class="grid grid-cols-4 sm:grid-cols-6 gap-2 md:gap-4 mb-4">
             <!-- Player cards will be inserted here by JavaScript -->
         </main>
 
@@ -108,40 +108,35 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- DATA ---
-    // A diverse list of 24 footballers with various attributes
+    // A diverse list of 24 male footballers with various attributes
     const footballers = [
-        // Male Players
-        { name: 'Lionel Messi', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Messi', hair: 'brown', facial_hair: 'beard', nationality: 'South American', club: 'Inter Miami', position: 'Forward', gender: 'male' },
-        { name: 'Cristiano Ronaldo', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ronaldo', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Al Nassr', position: 'Forward', gender: 'male' },
-        { name: 'Kylian Mbappé', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mbappé', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Forward', gender: 'male' },
-        { name: 'Neymar Jr.', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Neymar', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Al Hilal', position: 'Forward', gender: 'male' },
-        { name: 'Mohamed Salah', img: 'https://placehold.co/100x120/C4A484/000000?text=Salah', hair: 'black', facial_hair: 'beard', nationality: 'African', club: 'Liverpool', position: 'Forward', gender: 'male' },
-        { name: 'Kevin De Bruyne', img: 'https://placehold.co/100x120/F0E68C/000000?text=De+Bruyne', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Midfielder', gender: 'male' },
-        { name: 'Zlatan Ibrahimović', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Zlatan', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Forward', gender: 'male' },
-        { name: 'Paul Pogba', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Pogba', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Juventus', position: 'Midfielder', gender: 'male' },
-        { name: 'Sergio Ramos', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ramos', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Sevilla', position: 'Defender', gender: 'male' },
-        { name: 'Virgil van Dijk', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Van+Dijk', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Liverpool', position: 'Defender', gender: 'male' },
-        { name: 'Son Heung-min', img: 'https://placehold.co/100x120/FFE4C4/000000?text=Son', hair: 'black', facial_hair: 'none', nationality: 'Asian', club: 'Tottenham', position: 'Forward', gender: 'male' },
-        { name: 'Antoine Griezmann', img: 'https://placehold.co/100x120/F0E68C/000000?text=Griezmann', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Atletico Madrid', position: 'Forward', gender: 'male' },
-        
-        // Female Players
-        { name: 'Megan Rapinoe', img: 'https://placehold.co/100x120/F5D7E3/000000?text=Rapinoe', hair: 'blonde', facial_hair: 'none', nationality: 'North American', club: 'Retired', position: 'Midfielder', gender: 'female' },
-        { name: 'Sam Kerr', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kerr', hair: 'brown', facial_hair: 'none', nationality: 'Australian', club: 'Chelsea', position: 'Forward', gender: 'female' },
-        { name: 'Alexia Putellas', img: 'https://placehold.co/100x120/F0E68C/000000?text=Putellas', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Midfielder', gender: 'female' },
-        { name: 'Ada Hegerberg', img: 'https://placehold.co/100x120/F0E68C/000000?text=Hegerberg', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Lyon', position: 'Forward', gender: 'female' },
-        { name: 'Marta Vieira', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Marta', hair: 'black', facial_hair: 'none', nationality: 'South American', club: 'Orlando Pride', position: 'Forward', gender: 'female' },
-        { name: 'Vivianne Miedema', img: 'https://placehold.co/100x120/F0E68C/000000?text=Miedema', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Arsenal', position: 'Forward', gender: 'female' },
-        { name: 'Lucy Bronze', img: 'https://placehold.co/100x120/F0E68C/000000?text=Bronze', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Defender', gender: 'female' },
-        { name: 'Wendie Renard', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Renard', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Lyon', position: 'Defender', gender: 'female' },
-        { name: 'Harry Kane', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kane', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Forward', gender: 'male'},
-        { name: 'Sadio Mané', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mané', hair: 'black', facial_hair: 'none', nationality: 'African', club: 'Al Nassr', position: 'Forward', gender: 'male'},
-        { name: 'Robert Lewandowski', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Lewa', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Forward', gender: 'male'},
-        { name: 'Luka Modrić', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Modrić', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder', gender: 'male'},
+        { name: 'Lionel Messi', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Messi', hair: 'brown', facial_hair: 'beard', nationality: 'South American', club: 'Inter Miami', position: 'Forward' },
+        { name: 'Cristiano Ronaldo', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ronaldo', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Al Nassr', position: 'Forward' },
+        { name: 'Kylian Mbappé', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mbappé', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Forward' },
+        { name: 'Neymar Jr.', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Neymar', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Al Hilal', position: 'Forward' },
+        { name: 'Mohamed Salah', img: 'https://placehold.co/100x120/C4A484/000000?text=Salah', hair: 'black', facial_hair: 'beard', nationality: 'African', club: 'Liverpool', position: 'Forward' },
+        { name: 'Kevin De Bruyne', img: 'https://placehold.co/100x120/F0E68C/000000?text=De+Bruyne', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Midfielder' },
+        { name: 'Zlatan Ibrahimović', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Zlatan', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Forward' },
+        { name: 'Paul Pogba', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Pogba', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Juventus', position: 'Midfielder' },
+        { name: 'Sergio Ramos', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ramos', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Sevilla', position: 'Defender' },
+        { name: 'Virgil van Dijk', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Van+Dijk', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Liverpool', position: 'Defender' },
+        { name: 'Son Heung-min', img: 'https://placehold.co/100x120/FFE4C4/000000?text=Son', hair: 'black', facial_hair: 'none', nationality: 'Asian', club: 'Tottenham', position: 'Forward' },
+        { name: 'Antoine Griezmann', img: 'https://placehold.co/100x120/F0E68C/000000?text=Griezmann', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Atletico Madrid', position: 'Forward' },
+        { name: 'Harry Kane', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kane', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Forward'},
+        { name: 'Sadio Mané', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mané', hair: 'black', facial_hair: 'none', nationality: 'African', club: 'Al Nassr', position: 'Forward'},
+        { name: 'Robert Lewandowski', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Lewa', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Forward'},
+        { name: 'Luka Modrić', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Modrić', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder'},
+        { name: 'Erling Haaland', img: 'https://placehold.co/100x120/F0E68C/000000?text=Haaland', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Forward'},
+        { name: 'Karim Benzema', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Benzema', hair: 'black', facial_hair: 'beard', nationality: 'European', club: 'Al-Ittihad', position: 'Forward'},
+        { name: 'Toni Kroos', img: 'https://placehold.co/100x120/F0E68C/000000?text=Kroos', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Retired', position: 'Midfielder'},
+        { name: 'Manuel Neuer', img: 'https://placehold.co/100x120/F0E68C/000000?text=Neuer', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Goalkeeper'},
+        { name: 'Alisson Becker', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Alisson', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Liverpool', position: 'Goalkeeper'},
+        { name: 'Casemiro', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Casemiro', hair: 'black', facial_hair: 'none', nationality: 'South American', club: 'Manchester United', position: 'Midfielder'},
+        { name: 'Jude Bellingham', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Bellingham', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder'},
+        { name: 'Gerard Piqué', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Piqué', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Defender'},
     ];
 
     const questions = [
-        { text: 'Is your player male?', attribute: 'gender', value: 'male' },
-        { text: 'Is your player female?', attribute: 'gender', value: 'female' },
         { text: 'Does your player have blonde hair?', attribute: 'hair', value: 'blonde' },
         { text: 'Does your player have brown hair?', attribute: 'hair', value: 'brown' },
         { text: 'Does your player have black hair?', attribute: 'hair', value: 'black' },
@@ -150,15 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Is your player European?', attribute: 'nationality', value: 'European' },
         { text: 'Is your player South American?', attribute: 'nationality', value: 'South American' },
         { text: 'Is your player African?', attribute: 'nationality', value: 'African' },
-        { text: 'Is your player from North America?', attribute: 'nationality', value: 'North American' },
         { text: 'Is your player Asian?', attribute: 'nationality', value: 'Asian' },
-        { text: 'Is your player Australian?', attribute: 'nationality', value: 'Australian' },
         { text: 'Is your player a Forward?', attribute: 'position', value: 'Forward' },
         { text: 'Is your player a Midfielder?', attribute: 'position', value: 'Midfielder' },
         { text: 'Is your player a Defender?', attribute: 'position', value: 'Defender' },
+        { text: 'Is your player a Goalkeeper?', attribute: 'position', value: 'Goalkeeper' },
         { text: 'Does your player play for Real Madrid?', attribute: 'club', value: 'Real Madrid' },
-        { text: 'Does your player play for Barcelona?', attribute: 'club', value: 'Barcelona' },
         { text: 'Does your player play for Liverpool?', attribute: 'club', value: 'Liverpool' },
+        { text: 'Does your player play for Bayern Munich?', attribute: 'club', value: 'Bayern Munich' },
         { text: 'Is your player retired?', attribute: 'club', value: 'Retired' },
     ];
 
@@ -217,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.innerHTML = `
             <img src="${footballer.img}" alt="${footballer.name}" class="w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x120/ccc/000?text=Error';">
             <div class="p-2 text-center">
-                <p class="font-semibold text-sm">${footballer.name}</p>
+                <p class="font-semibold text-xs">${footballer.name}</p>
             </div>
         `;
         if (!isMystery) {
@@ -258,17 +252,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prepare characters
         currentFootballers = [...footballers];
         shuffle(currentFootballers);
+        
+        // We need 24 players for the board.
+        const boardPlayers = currentFootballers.slice(0, 24);
 
-        // Assign mystery characters
-        playerMysteryCharacter = currentFootballers.pop();
-        opponentMysteryCharacter = currentFootballers.pop();
-        
-        // Add player's mystery card back to the board pool for display
-        currentFootballers.push(playerMysteryCharacter);
-        shuffle(currentFootballers);
-        
+        // Assign mystery characters from the full list
+        playerMysteryCharacter = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
+        let tempOpponent = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
+        while (tempOpponent.name === playerMysteryCharacter.name) {
+            tempOpponent = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
+        }
+        opponentMysteryCharacter = tempOpponent;
+
         // Populate board
-        currentFootballers.forEach(p => {
+        boardPlayers.forEach(p => {
             gameBoard.appendChild(createCardElement(p));
         });
 
@@ -368,4 +365,41 @@ document.addEventListener('DOMContentLoaded', () => {
     askButton.addEventListener('click', handleAsk);
 
     guessButton.addEventListener('click', () => {
- 
+        if (gameOver || !isPlayerTurn) return;
+        guessModal.classList.add('active');
+        guessDropdown.innerHTML = '<option value="">Select a player...</option>';
+        
+        const remainingPlayers = Array.from(gameBoard.children)
+            .filter(card => !card.classList.contains('flipped'))
+            .map(card => card.dataset.name);
+            
+        remainingPlayers.sort().forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            guessDropdown.appendChild(option);
+        });
+    });
+
+    cancelGuessButton.addEventListener('click', () => guessModal.classList.remove('active'));
+    
+    submitGuessButton.addEventListener('click', () => {
+        const selectedGuess = guessDropdown.value;
+        if (selectedGuess) {
+            guessModal.classList.remove('active');
+            handleGuess(selectedGuess);
+        }
+    });
+
+    newGameButton.addEventListener('click', startGame);
+    playAgainButton.addEventListener('click', startGame);
+
+
+    // --- Initial Game Start ---
+    startGame();
+});
+</script>
+
+</body>
+</html>
+
