@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Who? - Footballer Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+        .card {
+            transition: transform 0.3s, filter 0.3s, opacity 0.3s;
+            cursor: pointer;
+            backface-visibility: hidden; /* Improves flip animation performance */
+        }
+        .card.flipped {
+            transform: scale(0.9);
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+        .mystery-card-glow {
+            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7);
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-all;
+        }
+        .btn-secondary {
+            @apply bg-green-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition-all;
+        }
+        .modal {
+            display: none; /* Hidden by default */
+        }
+        .modal.active {
+            display: flex; /* Show when active */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 max-w-4xl">
+        <header class="text-center mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Guess Who?</h1>
+            <p class="text-lg text-blue-600 font-semibold">Footballer Edition</p>
+        </header>
+
+        <!-- Game Board -->
+        <main id="game-board" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 md:gap-3 mb-4">
+            <!-- Player cards will be inserted here by JavaScript -->
+        </main>
+
+        <!-- Player's Mystery Card Section -->
+        <section id="player-section" class="mb-4 p-3 bg-white rounded-lg shadow-lg">
+            <h2 class="text-xl font-bold mb-2 text-center">Your Mystery Player</h2>
+            <div id="player-mystery-card-container" class="flex justify-center">
+                 <!-- Player's mystery card is shown here -->
+            </div>
+        </section>
+        
+        <!-- Controls Section -->
+        <section id="controls" class="p-4 bg-white rounded-lg shadow-lg text-center">
+            <div id="message-box" class="min-h-[50px] mb-4 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md flex items-center justify-center">
+                <p id="message-text" class="text-lg font-medium">Select a question to ask the opponent!</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-3">
+                <select id="questions" class="w-full sm:w-auto p-2 border border-gray-300 rounded-lg shadow-sm">
+                    <!-- Questions will be populated by JavaScript -->
+                </select>
+                <button id="ask-btn" class="btn-primary w-full sm:w-auto">Ask</button>
+                <button id="guess-btn" class="btn-secondary w-full sm:w-auto">Guess</button>
+            </div>
+        </section>
+
+        <footer class="text-center mt-4">
+            <button id="new-game-btn" class="bg-gray-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-gray-800 transition-all">New Game</button>
+        </footer>
+    </div>
+
+    <!-- Guess Modal -->
+    <div id="guess-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold mb-4">Make Your Guess!</h2>
+            <select id="guess-dropdown" class="w-full p-2 border border-gray-300 rounded-lg mb-4">
+                <!-- Dropdown options populated by JS -->
+            </select>
+            <div class="flex justify-center gap-4">
+                <button id="submit-guess-btn" class="btn-secondary">Submit Guess</button>
+                <button id="cancel-guess-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
+            <h2 id="result-title" class="text-3xl font-bold mb-4">You Won!</h2>
+            <p id="result-text" class="mb-4">The opponent's player was:</p>
+            <div id="opponent-reveal-card" class="flex justify-center mb-4"></div>
+            <button id="play-again-btn" class="btn-primary">Play Again</button>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- DATA ---
+    // A diverse list of 24 footballers with various attributes
+    const footballers = [
+        // Male Players
+        { name: 'Lionel Messi', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Messi', hair: 'brown', facial_hair: 'beard', nationality: 'South American', club: 'Inter Miami', position: 'Forward', gender: 'male' },
+        { name: 'Cristiano Ronaldo', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ronaldo', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Al Nassr', position: 'Forward', gender: 'male' },
+        { name: 'Kylian Mbappé', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mbappé', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Forward', gender: 'male' },
+        { name: 'Neymar Jr.', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Neymar', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Al Hilal', position: 'Forward', gender: 'male' },
+        { name: 'Mohamed Salah', img: 'https://placehold.co/100x120/C4A484/000000?text=Salah', hair: 'black', facial_hair: 'beard', nationality: 'African', club: 'Liverpool', position: 'Forward', gender: 'male' },
+        { name: 'Kevin De Bruyne', img: 'https://placehold.co/100x120/F0E68C/000000?text=De+Bruyne', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Midfielder', gender: 'male' },
+        { name: 'Zlatan Ibrahimović', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Zlatan', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Forward', gender: 'male' },
+        { name: 'Paul Pogba', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Pogba', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Juventus', position: 'Midfielder', gender: 'male' },
+        { name: 'Sergio Ramos', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ramos', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Sevilla', position: 'Defender', gender: 'male' },
+        { name: 'Virgil van Dijk', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Van+Dijk', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Liverpool', position: 'Defender', gender: 'male' },
+        { name: 'Son Heung-min', img: 'https://placehold.co/100x120/FFE4C4/000000?text=Son', hair: 'black', facial_hair: 'none', nationality: 'Asian', club: 'Tottenham', position: 'Forward', gender: 'male' },
+        { name: 'Antoine Griezmann', img: 'https://placehold.co/100x120/F0E68C/000000?text=Griezmann', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Atletico Madrid', position: 'Forward', gender: 'male' },
+        
+        // Female Players
+        { name: 'Megan Rapinoe', img: 'https://placehold.co/100x120/F5D7E3/000000?text=Rapinoe', hair: 'blonde', facial_hair: 'none', nationality: 'North American', club: 'Retired', position: 'Midfielder', gender: 'female' },
+        { name: 'Sam Kerr', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kerr', hair: 'brown', facial_hair: 'none', nationality: 'Australian', club: 'Chelsea', position: 'Forward', gender: 'female' },
+        { name: 'Alexia Putellas', img: 'https://placehold.co/100x120/F0E68C/000000?text=Putellas', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Midfielder', gender: 'female' },
+        { name: 'Ada Hegerberg', img: 'https://placehold.co/100x120/F0E68C/000000?text=Hegerberg', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Lyon', position: 'Forward', gender: 'female' },
+        { name: 'Marta Vieira', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Marta', hair: 'black', facial_hair: 'none', nationality: 'South American', club: 'Orlando Pride', position: 'Forward', gender: 'female' },
+        { name: 'Vivianne Miedema', img: 'https://placehold.co/100x120/F0E68C/000000?text=Miedema', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Arsenal', position: 'Forward', gender: 'female' },
+        { name: 'Lucy Bronze', img: 'https://placehold.co/100x120/F0E68C/000000?text=Bronze', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Defender', gender: 'female' },
+        { name: 'Wendie Renard', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Renard', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Lyon', position: 'Defender', gender: 'female' },
+        { name: 'Harry Kane', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kane', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Forward', gender: 'male'},
+        { name: 'Sadio Mané', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mané', hair: 'black', facial_hair: 'none', nationality: 'African', club: 'Al Nassr', position: 'Forward', gender: 'male'},
+        { name: 'Robert Lewandowski', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Lewa', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Forward', gender: 'male'},
+        { name: 'Luka Modrić', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Modrić', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder', gender: 'male'},
+    ];
+
+    const questions = [
+        { text: 'Is your player male?', attribute: 'gender', value: 'male' },
+        { text: 'Is your player female?', attribute: 'gender', value: 'female' },
+        { text: 'Does your player have blonde hair?', attribute: 'hair', value: 'blonde' },
+        { text: 'Does your player have brown hair?', attribute: 'hair', value: 'brown' },
+        { text: 'Does your player have black hair?', attribute: 'hair', value: 'black' },
+        { text: 'Does your player have a beard?', attribute: 'facial_hair', value: 'beard' },
+        { text: 'Does your player have no facial hair?', attribute: 'facial_hair', value: 'none' },
+        { text: 'Is your player European?', attribute: 'nationality', value: 'European' },
+        { text: 'Is your player South American?', attribute: 'nationality', value: 'South American' },
+        { text: 'Is your player African?', attribute: 'nationality', value: 'African' },
+        { text: 'Is your player from North America?', attribute: 'nationality', value: 'North American' },
+        { text: 'Is your player Asian?', attribute: 'nationality', value: 'Asian' },
+        { text: 'Is your player Australian?', attribute: 'nationality', value: 'Australian' },
+        { text: 'Is your player a Forward?', attribute: 'position', value: 'Forward' },
+        { text: 'Is your player a Midfielder?', attribute: 'position', value: 'Midfielder' },
+        { text: 'Is your player a Defender?', attribute: 'position', value: 'Defender' },
+        { text: 'Does your player play for Real Madrid?', attribute: 'club', value: 'Real Madrid' },
+        { text: 'Does your player play for Barcelona?', attribute: 'club', value: 'Barcelona' },
+        { text: 'Does your player play for Liverpool?', attribute: 'club', value: 'Liverpool' },
+        { text: 'Is your player retired?', attribute: 'club', value: 'Retired' },
+    ];
+
+    // --- DOM Elements ---
+    const gameBoard = document.getElementById('game-board');
+    const questionsDropdown = document.getElementById('questions');
+    const askButton = document.getElementById('ask-btn');
+    const guessButton = document.getElementById('guess-btn');
+    const newGameButton = document.getElementById('new-game-btn');
+    const playerMysteryCardContainer = document.getElementById('player-mystery-card-container');
+    const messageText = document.getElementById('message-text');
+    
+    // Modals
+    const guessModal = document.getElementById('guess-modal');
+    const resultModal = document.getElementById('result-modal');
+    const guessDropdown = document.getElementById('guess-dropdown');
+    const submitGuessButton = document.getElementById('submit-guess-btn');
+    const cancelGuessButton = document.getElementById('cancel-guess-btn');
+    const resultTitle = document.getElementById('result-title');
+    const resultText = document.getElementById('result-text');
+    const opponentRevealCard = document.getElementById('opponent-reveal-card');
+    const playAgainButton = document.getElementById('play-again-btn');
+    
+    // --- Game State ---
+    let playerMysteryCharacter = null;
+    let opponentMysteryCharacter = null;
+    let isPlayerTurn = true;
+    let gameOver = false;
+    let currentFootballers = [];
+
+    // --- Functions ---
+
+    /**
+     * Shuffles an array in place.
+     * @param {Array} array The array to shuffle.
+     */
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    /**
+     * Creates an HTML element for a footballer card.
+     * @param {object} footballer The footballer object.
+     * @param {boolean} isMystery Whether the card is a mystery card.
+     * @returns {HTMLElement} The card element.
+     */
+    function createCardElement(footballer, isMystery = false) {
+        const card = document.createElement('div');
+        card.className = `card bg-white rounded-lg shadow-md overflow-hidden ${isMystery ? 'mystery-card-glow' : ''}`;
+        if (!isMystery) {
+            card.dataset.name = footballer.name;
+        }
+        card.innerHTML = `
+            <img src="${footballer.img}" alt="${footballer.name}" class="w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x120/ccc/000?text=Error';">
+            <div class="p-2 text-center">
+                <p class="font-semibold text-sm">${footballer.name}</p>
+            </div>
+        `;
+        if (!isMystery) {
+            card.addEventListener('click', () => {
+                if (!gameOver) {
+                    card.classList.toggle('flipped');
+                }
+            });
+        }
+        return card;
+    }
+    
+    /**
+     * Populates the questions dropdown.
+     */
+    function populateQuestions() {
+        questionsDropdown.innerHTML = '';
+        questions.forEach(q => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify({ attribute: q.attribute, value: q.value });
+            option.textContent = q.text;
+            questionsDropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Starts or resets the game.
+     */
+    function startGame() {
+        // Reset state
+        gameOver = false;
+        isPlayerTurn = true;
+        gameBoard.innerHTML = '';
+        playerMysteryCardContainer.innerHTML = '';
+        opponentRevealCard.innerHTML = '';
+        resultModal.classList.remove('active');
+
+        // Prepare characters
+        currentFootballers = [...footballers];
+        shuffle(currentFootballers);
+
+        // Assign mystery characters
+        playerMysteryCharacter = currentFootballers.pop();
+        opponentMysteryCharacter = currentFootballers.pop();
+        
+        // Add player's mystery card back to the board pool for display
+        currentFootballers.push(playerMysteryCharacter);
+        shuffle(currentFootballers);
+        
+        // Populate board
+        currentFootballers.forEach(p => {
+            gameBoard.appendChild(createCardElement(p));
+        });
+
+        // Display player's mystery card
+        playerMysteryCardContainer.appendChild(createCardElement(playerMysteryCharacter, true));
+
+        // Populate questions
+        populateQuestions();
+        
+        // Set initial message
+        updateMessage("Your turn! Ask a question or make a guess.", 'info');
+    }
+    
+    /**
+     * Updates the message box with new text and style.
+     * @param {string} text The message to display.
+     * @param {'info'|'yes'|'no'|'warning'} type The type of message.
+     */
+    function updateMessage(text, type) {
+        messageText.textContent = text;
+        const box = document.getElementById('message-box');
+        box.className = 'min-h-[50px] mb-4 p-2 rounded-md flex items-center justify-center'; // Reset classes
+        switch(type) {
+            case 'yes':
+                box.classList.add('bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700');
+                break;
+            case 'no':
+                box.classList.add('bg-red-100', 'border-l-4', 'border-red-500', 'text-red-700');
+                break;
+            case 'warning':
+                box.classList.add('bg-orange-100', 'border-l-4', 'border-orange-500', 'text-orange-700');
+                break;
+            case 'info':
+            default:
+                 box.classList.add('bg-yellow-100', 'border-l-4', 'border-yellow-500', 'text-yellow-700');
+                break;
+        }
+    }
+
+    /**
+     * Handles the player asking a question.
+     */
+    function handleAsk() {
+        if (gameOver || !isPlayerTurn) return;
+
+        const selectedOption = JSON.parse(questionsDropdown.value);
+        const { attribute, value } = selectedOption;
+
+        const answer = opponentMysteryCharacter[attribute] === value;
+
+        if (answer) {
+            updateMessage(`Opponent says: YES! Their player has that attribute.`, 'yes');
+        } else {
+            updateMessage(`Opponent says: NO. Their player does not have that attribute.`, 'no');
+        }
+        
+        isPlayerTurn = false;
+        // Simple AI turn after a delay
+        setTimeout(aiTurn, 2000);
+    }
+
+    /**
+     * Simulates the opponent's turn.
+     */
+    function aiTurn() {
+        if (gameOver) return;
+        updateMessage("Opponent is thinking...", 'info');
+        
+        // AI logic can be improved, here's a very simple version
+        setTimeout(() => {
+            const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+            const answer = playerMysteryCharacter[randomQuestion.attribute] === randomQuestion.value;
+            
+            updateMessage(`Opponent asks: "${randomQuestion.text}". Your answer is ${answer ? 'Yes' : 'No'}. It's your turn again.`, 'warning');
+            isPlayerTurn = true;
+        }, 1500);
+    }
+    
+    /**
+     * Handles the player's final guess.
+     */
+    function handleGuess(guessName) {
+         if (gameOver) return;
+         gameOver = true;
+         
+         const correct = guessName === opponentMysteryCharacter.name;
+         
+         resultTitle.textContent = correct ? "🎉 You Win! 🎉" : "😢 You Lost 😢";
+         resultText.textContent = `The opponent's mystery player was:`;
+         opponentRevealCard.innerHTML = '';
+         opponentRevealCard.appendChild(createCardElement(opponentMysteryCharacter, true));
+
+         resultModal.classList.add('active');
+    }
+
+    // --- Event Listeners ---
+    askButton.addEventListener('click', handleAsk);
+
+    guessButton.addEventListener('click', () => {
+ 
