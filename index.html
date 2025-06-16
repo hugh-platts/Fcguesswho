@@ -1,405 +1,295 @@
-<!DOCTYPE html>
+1<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guess Who? - Footballer Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Football Guess Who</title>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
         }
-        .card {
-            transition: transform 0.3s, filter 0.3s, opacity 0.3s;
+        #start-screen, #game-board {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #player-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .player-card {
             cursor: pointer;
-            backface-visibility: hidden; /* Improves flip animation performance */
+            position: relative;
         }
-        .card.flipped {
-            transform: scale(0.9);
-            filter: grayscale(100%);
-            opacity: 0.5;
+        .player-card img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .mystery-card-glow {
-            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7);
+        .eliminated::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
         }
-        .btn-primary {
-            @apply bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-all;
-        }
-        .btn-secondary {
-            @apply bg-green-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition-all;
+        #turn-indicator, .chosen-player {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
         }
         .modal {
-            display: none; /* Hidden by default */
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
         }
-        .modal.active {
-            display: flex; /* Show when active */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body>
 
-    <div class="container mx-auto p-4 max-w-4xl">
-        <header class="text-center mb-4">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Guess Who?</h1>
-            <p class="text-lg text-blue-600 font-semibold">Footballer Edition</p>
-        </header>
+<div id="start-screen">
+    <h1>Football Guess Who</h1>
+    <input type="text" id="player1-name" placeholder="Player 1 Name">
+    <input type="text" id="player2-name" placeholder="Player 2 Name">
+    <button onclick="startGame()">Start Game</button>
+</div>
 
-        <!-- Game Board -->
-        <main id="game-board" class="grid grid-cols-4 sm:grid-cols-6 gap-2 md:gap-4 mb-4">
-            <!-- Player cards will be inserted here by JavaScript -->
-        </main>
+<div id="game-board" style="display: none;">
+    <h1 id="game-title"></h1>
+    <p id="turn-indicator"></p>
+    <p class="chosen-player" id="p1-chosen-player" style="display: none;">Player 1 has chosen a player. <button onclick="hideChosenMessage('p1')">OK</button></p>
+    <p class="chosen-player" id="p2-chosen-player" style="display: none;">Player 2 has chosen a player. <button onclick="hideChosenMessage('p2')">OK</button></p>
+    <div id="player-grid"></div>
+    <button onclick="makeGuess()">Guess</button>
+</div>
 
-        <!-- Player's Mystery Card Section -->
-        <section id="player-section" class="mb-4 p-3 bg-white rounded-lg shadow-lg">
-            <h2 class="text-xl font-bold mb-2 text-center">Your Mystery Player</h2>
-            <div id="player-mystery-card-container" class="flex justify-center">
-                 <!-- Player's mystery card is shown here -->
-            </div>
-        </section>
-        
-        <!-- Controls Section -->
-        <section id="controls" class="p-4 bg-white rounded-lg shadow-lg text-center">
-            <div id="message-box" class="min-h-[50px] mb-4 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md flex items-center justify-center">
-                <p id="message-text" class="text-lg font-medium">Select a question to ask the opponent!</p>
-            </div>
-
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-3">
-                <select id="questions" class="w-full sm:w-auto p-2 border border-gray-300 rounded-lg shadow-sm">
-                    <!-- Questions will be populated by JavaScript -->
-                </select>
-                <button id="ask-btn" class="btn-primary w-full sm:w-auto">Ask</button>
-                <button id="guess-btn" class="btn-secondary w-full sm:w-auto">Guess</button>
-            </div>
-        </section>
-
-        <footer class="text-center mt-4">
-            <button id="new-game-btn" class="bg-gray-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-gray-800 transition-all">New Game</button>
-        </footer>
-    </div>
-
-    <!-- Guess Modal -->
-    <div id="guess-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold mb-4">Make Your Guess!</h2>
-            <select id="guess-dropdown" class="w-full p-2 border border-gray-300 rounded-lg mb-4">
-                <!-- Dropdown options populated by JS -->
-            </select>
-            <div class="flex justify-center gap-4">
-                <button id="submit-guess-btn" class="btn-secondary">Submit Guess</button>
-                <button id="cancel-guess-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Result Modal -->
-    <div id="result-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm text-center">
-            <h2 id="result-title" class="text-3xl font-bold mb-4">You Won!</h2>
-            <p id="result-text" class="mb-4">The opponent's player was:</p>
-            <div id="opponent-reveal-card" class="flex justify-center mb-4"></div>
-            <button id="play-again-btn" class="btn-primary">Play Again</button>
-        </div>
-    </div>
-
+<div id="player-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2 id="modal-player-name"></h2>
+    <p><strong>League:</strong> <span id="modal-player-league"></span></p>
+    <p><strong>Position:</strong> <span id="modal-player-position"></span></p>
+    <p><strong>Nationality:</strong> <span id="modal-player-nationality"></span></p>
+    <p><strong>Team:</strong> <span id="modal-player-team"></span></p>
+  </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+const players = [
+    { name: 'Cristiano Ronaldo', image: 'https://fbref.com/req/202302030/images/headshots/dea698d9_2022.jpg', league: 'Saudi Pro League', position: 'Forward', nationality: 'Portugal', team: 'Al-Nassr' },
+    { name: 'Lionel Messi', image: 'https://fbref.com/req/202302030/images/headshots/d70ce98e_2022.jpg', league: 'MLS', position: 'Forward', nationality: 'Argentina', team: 'Inter Miami' },
+    { name: 'Kylian Mbappé', image: 'https://fbref.com/req/202302030/images/headshots/42111191_2022.jpg', league: 'Ligue 1', position: 'Forward', nationality: 'France', team: 'Paris Saint-Germain' },
+    { name: 'Erling Haaland', image: 'https://fbref.com/req/202302030/images/headshots/1f44ac21_2022.jpg', league: 'Premier League', position: 'Forward', nationality: 'Norway', team: 'Manchester City' },
+    { name: 'Kevin De Bruyne', image: 'https://fbref.com/req/202302030/images/headshots/e46012d4_2022.jpg', league: 'Premier League', position: 'Midfielder', nationality: 'Belgium', team: 'Manchester City' },
+    { name: 'Neymar', image: 'https://fbref.com/req/202302030/images/headshots/65957d2e_2022.jpg', league: 'Saudi Pro League', position: 'Forward', nationality: 'Brazil', team: 'Al-Hilal' },
+    { name: 'Mohamed Salah', image: 'https://fbref.com/req/202302030/images/headshots/e342ad68_2022.jpg', league: 'Premier League', position: 'Forward', nationality: 'Egypt', team: 'Liverpool' },
+    { name: 'Robert Lewandowski', image: 'https://fbref.com/req/202302030/images/headshots/8d78e732_2022.jpg', league: 'La Liga', position: 'Forward', nationality: 'Poland', team: 'Barcelona' },
+    { name: 'Harry Kane', image: 'https://fbref.com/req/202302030/images/headshots/21a66f6a_2022.jpg', league: 'Bundesliga', position: 'Forward', nationality: 'England', team: 'Bayern Munich' },
+    { name: 'Luka Modrić', image: 'https://fbref.com/req/202302030/images/headshots/8d73a339_2022.jpg', league: 'La Liga', position: 'Midfielder', nationality: 'Croatia', team: 'Real Madrid' },
+    { name: 'Virgil van Dijk', image: 'https://fbref.com/req/202302030/images/headshots/27d3a778_2022.jpg', league: 'Premier League', position: 'Defender', nationality: 'Netherlands', team: 'Liverpool' },
+    { name: 'Sadio Mané', image: 'https://fbref.com/req/202302030/images/headshots/f5895cda_2022.jpg', league: 'Saudi Pro League', position: 'Forward', nationality: 'Senegal', team: 'Al-Nassr' },
+    { name: 'Son Heung-min', image: 'https://fbref.com/req/202302030/images/headshots/92e7a919_2022.jpg', league: 'Premier League', position: 'Forward', nationality: 'South Korea', team: 'Tottenham Hotspur' },
+    { name: 'Alisson Becker', image: 'https://fbref.com/req/202302030/images/headshots/7a2e46a8_2022.jpg', league: 'Premier League', position: 'Goalkeeper', nationality: 'Brazil', team: 'Liverpool' },
+    { name: 'Thibaut Courtois', image: 'https://fbref.com/req/202302030/images/headshots/1840e36d_2022.jpg', league: 'La Liga', position: 'Goalkeeper', nationality: 'Belgium', team: 'Real Madrid' },
+    { name: 'Casemiro', image: 'https://fbref.com/req/202302030/images/headshots/4d224fe8_2022.jpg', league: 'Premier League', position: 'Midfielder', nationality: 'Brazil', team: 'Manchester United' },
+    { name: 'Jamal Musiala', image: 'https://fbref.com/req/202302030/images/headshots/2c0558b8_2022.jpg', league: 'Bundesliga', position: 'Midfielder', nationality: 'Germany', team: 'Bayern Munich' },
+    { name: 'Jude Bellingham', image: 'https://fbref.com/req/202302030/images/headshots/57d88cf9_2022.jpg', league: 'La Liga', position: 'Midfielder', nationality: 'England', team: 'Real Madrid' },
+    { name: 'Rúben Dias', image: 'https://fbref.com/req/202302030/images/headshots/31c69ef1_2022.jpg', league: 'Premier League', position: 'Defender', nationality: 'Portugal', team: 'Manchester City' },
+    { name: 'Achraf Hakimi', image: 'https://fbref.com/req/202302030/images/headshots/2a033a3a_2022.jpg', league: 'Ligue 1', position: 'Defender', nationality: 'Morocco', team: 'Paris Saint-Germain' },
+    { name: 'Victor Osimhen', image: 'https://fbref.com/req/202302030/images/headshots/8c9fd62b_2022.jpg', league: 'Serie A', position: 'Forward', nationality: 'Nigeria', team: 'Napoli' },
+    { name: 'Khvicha Kvaratskhelia', image: 'https://fbref.com/req/202302030/images/headshots/2f396e1f_2022.jpg', league: 'Serie A', position: 'Forward', nationality: 'Georgia', team: 'Napoli' },
+    { name: 'Martin Ødegaard', image: 'https://fbref.com/req/202302030/images/headshots/79300479_2022.jpg', league: 'Premier League', position: 'Midfielder', nationality: 'Norway', team: 'Arsenal' },
+    { name: 'Gavi', image: 'https://fbref.com/req/202302030/images/headshots/69292d94_2022.jpg', league: 'La Liga', position: 'Midfielder', nationality: 'Spain', team: 'Barcelona' }
+];
 
-    // --- DATA ---
-    // A diverse list of 24 male footballers with various attributes
-    const footballers = [
-        { name: 'Lionel Messi', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Messi', hair: 'brown', facial_hair: 'beard', nationality: 'South American', club: 'Inter Miami', position: 'Forward' },
-        { name: 'Cristiano Ronaldo', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ronaldo', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Al Nassr', position: 'Forward' },
-        { name: 'Kylian Mbappé', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mbappé', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Forward' },
-        { name: 'Neymar Jr.', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Neymar', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Al Hilal', position: 'Forward' },
-        { name: 'Mohamed Salah', img: 'https://placehold.co/100x120/C4A484/000000?text=Salah', hair: 'black', facial_hair: 'beard', nationality: 'African', club: 'Liverpool', position: 'Forward' },
-        { name: 'Kevin De Bruyne', img: 'https://placehold.co/100x120/F0E68C/000000?text=De+Bruyne', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Midfielder' },
-        { name: 'Zlatan Ibrahimović', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Zlatan', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Forward' },
-        { name: 'Paul Pogba', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Pogba', hair: 'black', facial_hair: 'none', nationality: 'European', club: 'Juventus', position: 'Midfielder' },
-        { name: 'Sergio Ramos', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Ramos', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Sevilla', position: 'Defender' },
-        { name: 'Virgil van Dijk', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Van+Dijk', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Liverpool', position: 'Defender' },
-        { name: 'Son Heung-min', img: 'https://placehold.co/100x120/FFE4C4/000000?text=Son', hair: 'black', facial_hair: 'none', nationality: 'Asian', club: 'Tottenham', position: 'Forward' },
-        { name: 'Antoine Griezmann', img: 'https://placehold.co/100x120/F0E68C/000000?text=Griezmann', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Atletico Madrid', position: 'Forward' },
-        { name: 'Harry Kane', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Kane', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Forward'},
-        { name: 'Sadio Mané', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Mané', hair: 'black', facial_hair: 'none', nationality: 'African', club: 'Al Nassr', position: 'Forward'},
-        { name: 'Robert Lewandowski', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Lewa', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Barcelona', position: 'Forward'},
-        { name: 'Luka Modrić', img: 'https://placehold.co/100x120/E0C0A3/000000?text=Modrić', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder'},
-        { name: 'Erling Haaland', img: 'https://placehold.co/100x120/F0E68C/000000?text=Haaland', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Manchester City', position: 'Forward'},
-        { name: 'Karim Benzema', img: 'https://placehold.co/100x120/A58B7F/FFFFFF?text=Benzema', hair: 'black', facial_hair: 'beard', nationality: 'European', club: 'Al-Ittihad', position: 'Forward'},
-        { name: 'Toni Kroos', img: 'https://placehold.co/100x120/F0E68C/000000?text=Kroos', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Retired', position: 'Midfielder'},
-        { name: 'Manuel Neuer', img: 'https://placehold.co/100x120/F0E68C/000000?text=Neuer', hair: 'blonde', facial_hair: 'none', nationality: 'European', club: 'Bayern Munich', position: 'Goalkeeper'},
-        { name: 'Alisson Becker', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Alisson', hair: 'black', facial_hair: 'beard', nationality: 'South American', club: 'Liverpool', position: 'Goalkeeper'},
-        { name: 'Casemiro', img: 'https://placehold.co/100x120/E8D8C3/000000?text=Casemiro', hair: 'black', facial_hair: 'none', nationality: 'South American', club: 'Manchester United', position: 'Midfielder'},
-        { name: 'Jude Bellingham', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Bellingham', hair: 'brown', facial_hair: 'none', nationality: 'European', club: 'Real Madrid', position: 'Midfielder'},
-        { name: 'Gerard Piqué', img: 'https://placehold.co/100x120/D4B7A3/000000?text=Piqué', hair: 'brown', facial_hair: 'beard', nationality: 'European', club: 'Retired', position: 'Defender'},
-    ];
+let player1Name = '';
+let player2Name = '';
+let player1ChosenPlayer = null;
+let player2ChosenPlayer = null;
+let currentPlayer = 1;
+let gamePhase = 'choosing'; // choosing, playing
 
-    const questions = [
-        { text: 'Does your player have blonde hair?', attribute: 'hair', value: 'blonde' },
-        { text: 'Does your player have brown hair?', attribute: 'hair', value: 'brown' },
-        { text: 'Does your player have black hair?', attribute: 'hair', value: 'black' },
-        { text: 'Does your player have a beard?', attribute: 'facial_hair', value: 'beard' },
-        { text: 'Does your player have no facial hair?', attribute: 'facial_hair', value: 'none' },
-        { text: 'Is your player European?', attribute: 'nationality', value: 'European' },
-        { text: 'Is your player South American?', attribute: 'nationality', value: 'South American' },
-        { text: 'Is your player African?', attribute: 'nationality', value: 'African' },
-        { text: 'Is your player Asian?', attribute: 'nationality', value: 'Asian' },
-        { text: 'Is your player a Forward?', attribute: 'position', value: 'Forward' },
-        { text: 'Is your player a Midfielder?', attribute: 'position', value: 'Midfielder' },
-        { text: 'Is your player a Defender?', attribute: 'position', value: 'Defender' },
-        { text: 'Is your player a Goalkeeper?', attribute: 'position', value: 'Goalkeeper' },
-        { text: 'Does your player play for Real Madrid?', attribute: 'club', value: 'Real Madrid' },
-        { text: 'Does your player play for Liverpool?', attribute: 'club', value: 'Liverpool' },
-        { text: 'Does your player play for Bayern Munich?', attribute: 'club', value: 'Bayern Munich' },
-        { text: 'Is your player retired?', attribute: 'club', value: 'Retired' },
-    ];
+const startScreen = document.getElementById('start-screen');
+const gameBoard = document.getElementById('game-board');
+const playerGrid = document.getElementById('player-grid');
+const turnIndicator = document.getElementById('turn-indicator');
+const gameTitle = document.getElementById('game-title');
+const p1ChosenMessage = document.getElementById('p1-chosen-player');
+const p2ChosenMessage = document.getElementById('p2-chosen-player');
+const modal = document.getElementById('player-modal');
 
-    // --- DOM Elements ---
-    const gameBoard = document.getElementById('game-board');
-    const questionsDropdown = document.getElementById('questions');
-    const askButton = document.getElementById('ask-btn');
-    const guessButton = document.getElementById('guess-btn');
-    const newGameButton = document.getElementById('new-game-btn');
-    const playerMysteryCardContainer = document.getElementById('player-mystery-card-container');
-    const messageText = document.getElementById('message-text');
-    
-    // Modals
-    const guessModal = document.getElementById('guess-modal');
-    const resultModal = document.getElementById('result-modal');
-    const guessDropdown = document.getElementById('guess-dropdown');
-    const submitGuessButton = document.getElementById('submit-guess-btn');
-    const cancelGuessButton = document.getElementById('cancel-guess-btn');
-    const resultTitle = document.getElementById('result-title');
-    const resultText = document.getElementById('result-text');
-    const opponentRevealCard = document.getElementById('opponent-reveal-card');
-    const playAgainButton = document.getElementById('play-again-btn');
-    
-    // --- Game State ---
-    let playerMysteryCharacter = null;
-    let opponentMysteryCharacter = null;
-    let isPlayerTurn = true;
-    let gameOver = false;
-    let currentFootballers = [];
+function startGame() {
+    player1Name = document.getElementById('player1-name').value || 'Player 1';
+    player2Name = document.getElementById('player2-name').value || 'Player 2';
 
-    // --- Functions ---
+    startScreen.style.display = 'none';
+    gameBoard.style.display = 'block';
+    gameTitle.textContent = `Football Guess Who: ${player1Name} vs ${player2Name}`;
+    turnIndicator.textContent = `${player1Name}, choose your player.`;
 
-    /**
-     * Shuffles an array in place.
-     * @param {Array} array The array to shuffle.
-     */
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-    }
+    renderPlayerGrid();
+}
 
-    /**
-     * Creates an HTML element for a footballer card.
-     * @param {object} footballer The footballer object.
-     * @param {boolean} isMystery Whether the card is a mystery card.
-     * @returns {HTMLElement} The card element.
-     */
-    function createCardElement(footballer, isMystery = false) {
+function renderPlayerGrid() {
+    playerGrid.innerHTML = '';
+    players.forEach(player => {
         const card = document.createElement('div');
-        card.className = `card bg-white rounded-lg shadow-md overflow-hidden ${isMystery ? 'mystery-card-glow' : ''}`;
-        if (!isMystery) {
-            card.dataset.name = footballer.name;
-        }
-        card.innerHTML = `
-            <img src="${footballer.img}" alt="${footballer.name}" class="w-full h-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x120/ccc/000?text=Error';">
-            <div class="p-2 text-center">
-                <p class="font-semibold text-xs">${footballer.name}</p>
-            </div>
-        `;
-        if (!isMystery) {
-            card.addEventListener('click', () => {
-                if (!gameOver) {
-                    card.classList.toggle('flipped');
-                }
-            });
-        }
-        return card;
-    }
-    
-    /**
-     * Populates the questions dropdown.
-     */
-    function populateQuestions() {
-        questionsDropdown.innerHTML = '';
-        questions.forEach(q => {
-            const option = document.createElement('option');
-            option.value = JSON.stringify({ attribute: q.attribute, value: q.value });
-            option.textContent = q.text;
-            questionsDropdown.appendChild(option);
-        });
-    }
-
-    /**
-     * Starts or resets the game.
-     */
-    function startGame() {
-        // Reset state
-        gameOver = false;
-        isPlayerTurn = true;
-        gameBoard.innerHTML = '';
-        playerMysteryCardContainer.innerHTML = '';
-        opponentRevealCard.innerHTML = '';
-        resultModal.classList.remove('active');
-
-        // Prepare characters
-        currentFootballers = [...footballers];
-        shuffle(currentFootballers);
-        
-        // We need 24 players for the board.
-        const boardPlayers = currentFootballers.slice(0, 24);
-
-        // Assign mystery characters from the full list
-        playerMysteryCharacter = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
-        let tempOpponent = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
-        while (tempOpponent.name === playerMysteryCharacter.name) {
-            tempOpponent = currentFootballers[Math.floor(Math.random() * currentFootballers.length)];
-        }
-        opponentMysteryCharacter = tempOpponent;
-
-        // Populate board
-        boardPlayers.forEach(p => {
-            gameBoard.appendChild(createCardElement(p));
-        });
-
-        // Display player's mystery card
-        playerMysteryCardContainer.appendChild(createCardElement(playerMysteryCharacter, true));
-
-        // Populate questions
-        populateQuestions();
-        
-        // Set initial message
-        updateMessage("Your turn! Ask a question or make a guess.", 'info');
-    }
-    
-    /**
-     * Updates the message box with new text and style.
-     * @param {string} text The message to display.
-     * @param {'info'|'yes'|'no'|'warning'} type The type of message.
-     */
-    function updateMessage(text, type) {
-        messageText.textContent = text;
-        const box = document.getElementById('message-box');
-        box.className = 'min-h-[50px] mb-4 p-2 rounded-md flex items-center justify-center'; // Reset classes
-        switch(type) {
-            case 'yes':
-                box.classList.add('bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700');
-                break;
-            case 'no':
-                box.classList.add('bg-red-100', 'border-l-4', 'border-red-500', 'text-red-700');
-                break;
-            case 'warning':
-                box.classList.add('bg-orange-100', 'border-l-4', 'border-orange-500', 'text-orange-700');
-                break;
-            case 'info':
-            default:
-                 box.classList.add('bg-yellow-100', 'border-l-4', 'border-yellow-500', 'text-yellow-700');
-                break;
-        }
-    }
-
-    /**
-     * Handles the player asking a question.
-     */
-    function handleAsk() {
-        if (gameOver || !isPlayerTurn) return;
-
-        const selectedOption = JSON.parse(questionsDropdown.value);
-        const { attribute, value } = selectedOption;
-
-        const answer = opponentMysteryCharacter[attribute] === value;
-
-        if (answer) {
-            updateMessage(`Opponent says: YES! Their player has that attribute.`, 'yes');
-        } else {
-            updateMessage(`Opponent says: NO. Their player does not have that attribute.`, 'no');
-        }
-        
-        isPlayerTurn = false;
-        // Simple AI turn after a delay
-        setTimeout(aiTurn, 2000);
-    }
-
-    /**
-     * Simulates the opponent's turn.
-     */
-    function aiTurn() {
-        if (gameOver) return;
-        updateMessage("Opponent is thinking...", 'info');
-        
-        // AI logic can be improved, here's a very simple version
-        setTimeout(() => {
-            const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-            const answer = playerMysteryCharacter[randomQuestion.attribute] === randomQuestion.value;
-            
-            updateMessage(`Opponent asks: "${randomQuestion.text}". Your answer is ${answer ? 'Yes' : 'No'}. It's your turn again.`, 'warning');
-            isPlayerTurn = true;
-        }, 1500);
-    }
-    
-    /**
-     * Handles the player's final guess.
-     */
-    function handleGuess(guessName) {
-         if (gameOver) return;
-         gameOver = true;
-         
-         const correct = guessName === opponentMysteryCharacter.name;
-         
-         resultTitle.textContent = correct ? "🎉 You Win! 🎉" : "😢 You Lost 😢";
-         resultText.textContent = `The opponent's mystery player was:`;
-         opponentRevealCard.innerHTML = '';
-         opponentRevealCard.appendChild(createCardElement(opponentMysteryCharacter, true));
-
-         resultModal.classList.add('active');
-    }
-
-    // --- Event Listeners ---
-    askButton.addEventListener('click', handleAsk);
-
-    guessButton.addEventListener('click', () => {
-        if (gameOver || !isPlayerTurn) return;
-        guessModal.classList.add('active');
-        guessDropdown.innerHTML = '<option value="">Select a player...</option>';
-        
-        const remainingPlayers = Array.from(gameBoard.children)
-            .filter(card => !card.classList.contains('flipped'))
-            .map(card => card.dataset.name);
-            
-        remainingPlayers.sort().forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            guessDropdown.appendChild(option);
-        });
+        card.classList.add('player-card');
+        card.dataset.name = player.name;
+        card.innerHTML = `<img src="${player.image}" alt="${player.name}">`;
+        card.addEventListener('click', () => handleCardClick(player.name));
+        playerGrid.appendChild(card);
     });
+}
 
-    cancelGuessButton.addEventListener('click', () => guessModal.classList.remove('active'));
-    
-    submitGuessButton.addEventListener('click', () => {
-        const selectedGuess = guessDropdown.value;
-        if (selectedGuess) {
-            guessModal.classList.remove('active');
-            handleGuess(selectedGuess);
+function handleCardClick(playerName) {
+    if (gamePhase === 'choosing') {
+        if (currentPlayer === 1 && !player1ChosenPlayer) {
+            player1ChosenPlayer = playerName;
+            p1ChosenMessage.style.display = 'block';
+            turnIndicator.textContent = `${player2Name}, choose your player.`;
+            currentPlayer = 2;
+        } else if (currentPlayer === 2 && !player2ChosenPlayer) {
+            player2ChosenPlayer = playerName;
+            p2ChosenMessage.style.display = 'block';
+            turnIndicator.textContent = `${player1Name}'s turn to ask a question.`;
+            gamePhase = 'playing';
+            currentPlayer = 1;
         }
+    } else if (gamePhase === 'playing') {
+        const card = document.querySelector(`.player-card[data-name="${playerName}"]`);
+        card.classList.toggle('eliminated');
+        switchTurn();
+    }
+}
+
+function hideChosenMessage(player) {
+    if (player === 'p1') {
+        p1ChosenMessage.style.display = 'none';
+    } else {
+        p2ChosenMessage.style.display = 'none';
+    }
+}
+
+function switchTurn() {
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    const currentName = currentPlayer === 1 ? player1Name : player2Name;
+    turnIndicator.textContent = `${currentName}'s turn.`;
+}
+
+function makeGuess() {
+    if (gamePhase !== 'playing') return;
+
+    const currentName = currentPlayer === 1 ? player1Name : player2Name;
+    const opponentPlayer = currentPlayer === 1 ? player2ChosenPlayer : player1ChosenPlayer;
+    const guess = prompt(`${currentName}, who is your opponent's player?`);
+
+    if (guess && guess.toLowerCase() === opponentPlayer.toLowerCase()) {
+        alert(`${currentName} wins! The player was ${opponentPlayer}.`);
+        endGame();
+    } else {
+        alert('Incorrect! You lose your turn.');
+        switchTurn();
+    }
+}
+
+function endGame() {
+    gamePhase = 'ended';
+    turnIndicator.textContent = 'Game Over!';
+}
+
+document.querySelectorAll('.player-card').forEach(card => {
+    card.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const playerName = this.dataset.name;
+        const player = players.find(p => p.name === playerName);
+        openModal(player);
     });
-
-    newGameButton.addEventListener('click', startGame);
-    playAgainButton.addEventListener('click', startGame);
-
-
-    // --- Initial Game Start ---
-    startGame();
 });
+
+window.addEventListener('click', function(event) {
+    const card = event.target.closest('.player-card');
+    if (card && gamePhase === 'playing') {
+        const playerName = card.dataset.name;
+        const player = players.find(p => p.name === playerName);
+        openModal(player);
+    }
+});
+
+
+function openModal(player) {
+    document.getElementById('modal-player-name').textContent = player.name;
+    document.getElementById('modal-player-league').textContent = player.league;
+    document.getElementById('modal-player-position').textContent = player.position;
+    document.getElementById('modal-player-nationality').textContent = player.nationality;
+    document.getElementById('modal-player-team').textContent = player.team;
+    modal.style.display = "block";
+}
+
+function closeModal() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+
 </script>
 
 </body>
 </html>
-
